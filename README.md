@@ -10,6 +10,9 @@
 
 ## 目录结构
 
+> **说明**：本仓库根目录的内容，等价于目标项目中的 `.agents/` 目录内容。
+> 使用时应将本仓库中的 `workflows/`、`tasks/`、`context/`、`specs/`、`archive/`、`GEMINI.md` 复制到目标项目的 `.agents/` 下。
+
 ```
 .agents/
 ├── workflows/          # 工作流定义
@@ -18,6 +21,8 @@
 │   ├── task.md         # /task — 任务继续执行
 │   ├── discuss.md      # /discuss — 自由讨论模式
 │   └── init.md         # /init — 项目初始化
+├── tasks/              # 任务工作区（计划/清单/状态/审查）
+│   └── _templates/     # 标准任务模板与使用说明
 ├── context/            # 跨会话记忆
 │   ├── architecture.md # 技术栈与架构
 │   ├── active-tasks.md # 进行中的任务
@@ -56,6 +61,8 @@
 - **技术决策澄清**：AI 主动识别隐含决策点，区分阻塞/非阻塞性决策
 - **验收标准驱动**：每个任务必须包含可验证的验收断言
 - **微审查机制**：每完成一个任务立即审查，而非最后一次性审查
+- **任务工作区**：计划、任务清单、状态和审查报告都有固定落盘位置，支持 `/task` 恢复
+- **模板驱动执行**：`tasks/_templates/` 提供标准骨架与恢复规则，减少 AI 自由发挥导致的格式漂移
 - **自动归档与记忆提取**：完成后自动沉淀知识，更新项目规范
 
 ## 快速开始
@@ -63,17 +70,19 @@
 ### 1. 复制到你的项目
 
 ```bash
-cp -r .agents/ /path/to/your/project/.agents/
+mkdir -p /path/to/your/project/.agents/
+cp -r workflows tasks context specs archive GEMINI.md /path/to/your/project/.agents/
 ```
 
 ### 2. 初始化
 
-让 AI 执行 `/init`，它会自动扫描项目结构并填充上下文文件。
+复制完成后，让 AI 执行 `/init`。它会检测 `.agents/` 是否完整、补齐缺失文件，并根据项目实际情况填充上下文文件。
 
 ### 3. 开始使用
 
 - 开发新功能：告诉 AI 你的需求，它会自动路由到 `/dev`
 - 修复 Bug：描述问题，AI 会路由到 `/fix`
+- 继续执行：要求 AI 继续某个已有计划或任务，它会路由到 `/task`
 - 技术讨论：直接聊，AI 会自动进入 `/discuss` 模式
 
 ## 设计原则
@@ -87,7 +96,7 @@ cp -r .agents/ /path/to/your/project/.agents/
 
 本框架设计为**工具无关**，可适配不同的 AI 编程助手：
 
-- **Antigravity / Gemini**：将 `GEMINI.md` 配置为系统指令，workflows 放入 `.agents/workflows/`
+- **Antigravity / Gemini**：将 `GEMINI.md` 配置为系统指令，其他目录复制到目标项目 `.agents/` 下
 - **Claude Code**：可转换为 `CLAUDE.md` + commands 格式
 - **Cursor**：可转换为 `.cursorrules` + 自定义 commands 格式
 

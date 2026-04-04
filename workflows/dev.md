@@ -15,7 +15,27 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 ## ⚠️ 铁律（补充，全局铁律见 GEMINI.md）
 
 1. **禁止跳过检查点** — 每个 ⛔ 检查点必须等用户确认后才能继续，不能自行推进。
-2. **完成后必须归档** — 步骤 9 不是可选项，是必须执行的最后一步。
+2. **进入执行前必须建任务工作区** — 计划、任务清单、状态文件必须有固定落盘位置。
+3. **长期记忆即时写入** — 一旦触发长期记忆条件，在当前回复后立即更新对应 `context/` 文件。
+4. **范围变化要回流** — 如果实现过程中发现范围明显扩大、需要新增阻塞决策或跨模块重设计，先回到设计/计划阶段并请求确认。
+
+## 任务工作区约定
+
+每个 `/dev` 任务在进入执行前，都要创建唯一任务目录：
+
+- `.agents/tasks/<task-id>/plan.md`
+- `.agents/tasks/<task-id>/checklist.md`
+- `.agents/tasks/<task-id>/status.md`
+- `.agents/tasks/<task-id>/review.md`
+- 可选参考模板：`.agents/tasks/_templates/*.template.md`
+
+其中 `<task-id>` 建议使用 `YYYYMMDD-short-title` 风格，要求可读、唯一、稳定。
+
+创建任务工作区时应遵循：
+
+- `plan.md`、`checklist.md`、`status.md`、`review.md` **优先从模板生成**
+- 新建任务时可以自动从模板创建这些文件
+- 已存在任务的实例文件如果缺失，**不得凭空重建历史内容**；应先告知用户，再决定是否切换到 `/task` 或重新建档
 
 ## 执行步骤
 
@@ -33,6 +53,8 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 ⚠️ 读取 spec 时，如果发现与实际代码不符，**先更新 spec 再继续工作**。
 
 **智能检索归档**：读取 `.agents/archive/_index.md`，根据当前任务描述，只选出 **≤5 个最相关**的归档文件阅读，不要全量加载。
+
+**读取任务状态约定**：如果当前需求本质上是继续执行已有任务，优先读取 `.agents/context/active-tasks.md` 和对应任务目录，必要时切换到 `/task`。
 
 ### 2. 需求分析
 
@@ -80,7 +102,7 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
    - 备选方案：[描述]
 ```
 
-- 如果没有隐含决策点，明确说"无需额外决策"并跳过
+- 如果没有隐含决策点，明确说"无需额外决策"
 - 关注：数据结构选择、状态管理方式、模块边界划分、性能策略等
 
 > ⛔ **检查点 2**：等待用户逐条回答后继续
@@ -100,7 +122,15 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 - 核心接口和数据结构定义
 - 关键实现逻辑说明
 - 风险点和应对策略
-- 输出：**implementation_plan.md**
+- 生成唯一 `task-id`
+- 输出：`.agents/tasks/<task-id>/plan.md`
+- 优先以 `.agents/tasks/_templates/plan.template.md` 为骨架生成
+- 在 `.agents/context/active-tasks.md` 中登记该任务，至少包含：
+  - 任务标题
+  - task-id
+  - `plan.md` / `checklist.md` / `status.md` 路径
+  - 当前阶段
+  - 开始日期
 
 > ⛔ **检查点 4**：等待用户审核方案后继续
 
@@ -111,24 +141,33 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 
 ```markdown
 - [ ] **任务描述**
-  - 验收：[可验证的具体断言，如：调用 X 方法返回 Y 结果]
-  - 验收：[不会触发的副作用或边界条件]
-  - 预估：~Xmin
+  - Files: `path/to/file1`, `path/to/file2`
+  - Accept: [可验证的具体断言，如：调用 X 方法返回 Y 结果]
+  - Accept: [不会触发的副作用或边界条件]
+  - Non-goal: [明确不做什么]
+  - Risk: [该任务的主要风险]
+  - Estimate: ~Xmin
 ```
 
 - 验收标准不要求写正式测试用例，但必须是**客观可判断**的
-- 输出：**task.md**（带验收标准的 checkbox 格式）
+- 单个任务应尽量控制在 **15-45 分钟**内、**最多 3 个强相关文件**
+- 输出：`.agents/tasks/<task-id>/checklist.md`
+- 优先以 `.agents/tasks/_templates/checklist.template.md` 为骨架生成
+- 同步初始化 `.agents/tasks/<task-id>/status.md`
+- `status.md` 优先以 `.agents/tasks/_templates/status.template.md` 为骨架生成
 
 ### 7. 逐条执行
 
 严格按任务清单逐条实现：
-- 每完成一条，在 task.md 中标记 `[x]`
+- 每完成一条，在 `checklist.md` 中标记 `[x]`
 - 实现前**必须先阅读**要修改的文件
+- 每完成一条，同步更新 `status.md` 中的当前任务、进度和下一步
 - **每完成一个任务后，立即微审查**：
   - 改动是否满足该任务的验收标准
   - 是否引入编译错误或明显逻辑错误
   - 是否破坏已完成任务的验收标准
 - 每完成 3-5 个任务后，进行一次**跨任务一致性检查**
+- 在任一步骤中，只要触发长期记忆条件，就在当前回复后立即更新对应 `context/` 文件
 
 ### 8. 最终代码审查
 
@@ -137,7 +176,7 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 - 检查与现有代码的兼容性
 - 检查命名规范一致性
 - 检查是否引入新的依赖或副作用
-- **逐条核对 task.md 中的验收标准是否全部满足**
+- **逐条核对 `checklist.md` 中的验收标准是否全部满足**
 
 > ⛔ **必须按以下格式输出审查报告：**
 
@@ -163,6 +202,8 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 - 运行相关测试（如有）
 - 手动验证关键路径
 - 确认功能符合需求
+- 将最终验证结论写入 `.agents/tasks/<task-id>/review.md`
+- `review.md` 优先以 `.agents/tasks/_templates/review.template.md` 为骨架生成
 
 ### 10. 归档 + 更新规范
 
@@ -178,19 +219,20 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
    ---
    ```
 2. 更新 `.agents/archive/_index.md`
-3. 更新 `.agents/context/active-tasks.md`（移除已完成任务）
+3. 更新 `.agents/context/active-tasks.md`（移除已完成任务，或标记为 completed）
 4. **更新 specs/**：
    - 涉及已有 spec 的模块 → 更新对应 spec 文件
    - 涉及新模块且复杂度 ≥3 个文件 → 创建新 spec + 更新 `specs/_overview.md`
    - 只是小修改（1-2 个文件）且无对应 spec → 不创建
 5. 如有架构级变更，更新 `.agents/context/architecture.md`
+6. 将 `status.md` 标记为 `completed`
 
 ### 11. 自动提取记忆
 
-归档完成后，回顾本次对话，自动提取并写入记忆（如有新发现）：
+归档完成后，回顾本次对话，补充检查是否仍有**尚未落盘的长期记忆**：
 - 用户纠正/确认的行为 → 写入 `context/feedback.md`
 - 新了解的用户背景/偏好 → 写入 `context/user-preferences.md`
 - 提到的外部资源链接 → 写入 `context/references.md`
 - 重要技术决策及原因 → 写入 `archive/decisions/`
 
-只保存从代码中无法推导的信息，不保存代码模式/架构/Git 历史。
+只保存从代码中无法推导、且未来仍有复用价值的信息，不保存代码模式、临时状态或 Git 历史。
