@@ -24,8 +24,11 @@ description: 一键初始化项目的 workflow 基础设施（归档目录、上
 - `.agents/workflows/init.md`
 - `.agents/workflows/dev.md`
 - `.agents/workflows/fix.md`
+- `.agents/workflows/review.md`
 - `.agents/workflows/task.md`
 - `.agents/workflows/discuss.md`
+- `.agents/workflows/_templates/README.md`
+- `.agents/workflows/_templates/review-report.template.md`
 - `.agents/specs/_overview.md`
 - `.agents/archive/_index.md`
 - `.agents/archive/features/`
@@ -51,6 +54,7 @@ description: 一键初始化项目的 workflow 基础设施（归档目录、上
 - 上下文文件需要根据项目实际情况填充
 - `tasks/` 目录用于存放 `/dev` 与 `/task` 的计划、清单、状态和审查文件
 - `tasks/_templates/` 目录用于提供标准任务骨架，缺失时应一并补齐
+- `workflows/_templates/` 目录用于提供 `/review` 等独立 workflow 的标准输出模板
 - `/init` **只自动恢复标准基础设施与模板文件**，不自动重建某个具体任务目录下已经丢失的实例内容
 
 ### 3. 自动填充上下文（老项目）
@@ -76,6 +80,7 @@ description: 一键初始化项目的 workflow 基础设施（归档目录、上
 | archive/_index.md | 🆕 已创建 |
 | context/architecture.md | 🆕 已创建（已自动填充） |
 | tasks/ | 🆕 已创建 |
+| workflows/_templates/review-report.template.md | 🆕 已创建 |
 | tasks/_templates/README.md | 🆕 已创建 |
 | tasks/_templates/plan.template.md | 🆕 已创建 |
 ```

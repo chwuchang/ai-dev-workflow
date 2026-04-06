@@ -222,8 +222,15 @@ AI 自动路由或用户显式调用 `/dev`。适用于：
 3. 更新 `.agents/context/active-tasks.md`（移除已完成任务，或标记为 completed）
 4. **更新 specs/**：
    - 涉及已有 spec 的模块 → 更新对应 spec 文件
-   - 涉及新模块且复杂度 ≥3 个文件 → 创建新 spec + 更新 `specs/_overview.md`
-   - 只是小修改（1-2 个文件）且无对应 spec → 不创建
+   - 需要创建新 spec 的条件（满足任一即可）：
+     a. 新增了独立模块（有独立职责边界，不只是给现有模块加文件）
+     b. 变更影响了其他模块的调用约定或数据结构契约
+     c. 引入了需要长期遵守的行为规则（如状态机转换、鉴权策略、缓存策略等）
+   - 不需要创建 spec 的场景：
+     a. 纯内部重构，对外接口和行为无变化
+     b. 只是 bug 修复，无行为变更
+     c. 配置调整、文案修改等非逻辑变更
+   - 创建新 spec 时，同步更新 `specs/_overview.md`
 5. 如有架构级变更，更新 `.agents/context/architecture.md`
 6. 将 `status.md` 标记为 `completed`
 
